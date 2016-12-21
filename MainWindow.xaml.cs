@@ -250,7 +250,7 @@ namespace RedAlert
         //重写关闭按钮（窗口右上角关闭按钮）实现方法。（已经通过xaml绑定）
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            MessageBoxResult result = MessageBox.Show("是否最小化到系统托盘，后台运行？", "WPF最小化", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show("是否最小化到系统托盘，后台运行？", "关闭选项", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
                 Hide();             //调用隐藏窗口方法
