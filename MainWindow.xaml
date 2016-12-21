@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RedAlert"
         mc:Ignorable="d"
+        Closing="MainWindow_Closing"
         Title="QQ空间红警大战-辅助程序" Height="728" Width="980"  VerticalAlignment="Top" ResizeMode="CanMinimize">
     <Grid>
         <WebBrowser x:Name="web1" HorizontalAlignment="Left" Height="678" VerticalAlignment="Top" Width="965"/>
