@@ -6,11 +6,12 @@
         xmlns:local="clr-namespace:RedAlert"
         mc:Ignorable="d"
         Closing="MainWindow_Closing"
-        Title="QQ空间红警大战-辅助程序" Height="728" Width="980"  VerticalAlignment="Top" ResizeMode="CanMinimize">
+        Title="QQ空间红警大战-辅助程序" Height="728" Width="972"  VerticalAlignment="Top" ResizeMode="CanMinimize">
     <Grid>
         <WebBrowser x:Name="web1" HorizontalAlignment="Left" Height="678" VerticalAlignment="Top" Width="965"/>
         <CheckBox x:Name="checkBox" Content="自动刷新(默认5分钟刷新一次，防止被攻击)" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Margin="201,682.837,0,-1.837" Height="19" Width="256"/>
         <Button x:Name="button" Content="切换账号" HorizontalAlignment="Left" Margin="634,678,0,-1.837" VerticalAlignment="Top" Width="75" Click="button_Click" Height="23.837"/>
+        <Button x:Name="zhengzhan" Content="自动征战" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="766,679,0,-0.837" Click="zhengzhan_Click"/>
 
     </Grid>
 </Window>

@@ -4,6 +4,7 @@ using System.Windows.Navigation;
 using System.Configuration;
 using System.Runtime.InteropServices;       //清空session时用到
 using Forms = System.Windows.Forms;         //最小化到系统托盘
+using System.Threading;
 
 namespace RedAlert
 {
@@ -17,15 +18,37 @@ namespace RedAlert
         bool isLogin = false;                                   //登录状态。不能直接在复选框xml绑定的函数上关闭定时器，因为复选框初始化时，定时器还没创建，所以先记录下来
         System.Windows.Threading.DispatcherTimer timer;         //定时器变量
         bool isFresh = false;                                   //刷新状态。如果是刷新状态，则不再向配置文件写入数据
+        bool isAuto = false;
 
-        private Forms.NotifyIcon notifyIcon;                          //最小化到系统托盘变量
+
+        private Forms.NotifyIcon notifyIcon;                   //最小化到系统托盘变量
+
+        //-------------------------模拟鼠标事件常量------------------------
+        const int MOUSEEVENTF_MOVE = 0x0001;        //移动鼠标
+        const int MOUSEEVENTF_LEFTDOWN = 0x0002;    //模拟鼠标左键按下
+        const int MOUSEEVENTF_LEFTUP = 0x0004;      //模拟鼠标左键抬起
+        const int MOUSEEVENTF_RIGHTDOWN = 0x0008;   //模拟鼠标右键按下
+        const int MOUSEEVENTF_RIGHTUP = 0x0010;     //模拟鼠标右键抬起
+        const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;  //模拟鼠标中键按下
+        const int MOUSEEVENTF_MIDDLEUP = 0x0040;    //模拟鼠标中键抬起
+        const int MOUSEEVENTF_ABSOLUTE = 0x8000;    //标示是否采用绝对坐标
 
 
-        //------------------------清空session时用到------------------------
+        //-------------------------导入windows API库函数用于模拟鼠标事件----------------------------------
+        //声明库中的鼠标事件函数
+        [System.Runtime.InteropServices.DllImport("user32")]
+        private static extern int mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+        //导入设置鼠标位置外部函数
+        [DllImport("user32.dll")]
+        static extern bool SetCursorPos(int X, int Y);
+        //------------------------------------------------------------------------------------------------
+
+
+        //------------------------导入清空session用到的函数----------------------------------------------------------------
         private const int INTERNET_OPTION_END_BROWSER_SESSION = 42;
         [DllImport("wininet.dll", SetLastError = true)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int lpdwBufferLength);
-        //-----------------------------------------------------------------
+        //------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -50,7 +73,7 @@ namespace RedAlert
             //添加系统托盘图标的-退出菜单项
             System.Windows.Forms.MenuItem exit = new System.Windows.Forms.MenuItem("退出");
             exit.Click += new EventHandler(Close);
-            //添加系统托盘图标的-关联托盘控件
+            //关联托盘控件菜单
             System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] { open, exit };
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
             //添加双击打开程序图标
@@ -129,7 +152,7 @@ namespace RedAlert
         private void timer_Refresh(object sender, EventArgs e)
         {
             //判断登录状态，如果没有登录就不执行刷新
-            if (isLogin)
+            if (isLogin && !isAuto)
             { 
                 Uri uri = new Uri(game_url);        //web控件，加载上一次登录的URL
                 web1.Navigate(uri);
@@ -269,5 +292,94 @@ namespace RedAlert
 
 
 
+        //自动征战源代码
+        private void zhengzhan_Click(object sender, RoutedEventArgs e)
+        {
+            //开启一条新的线程
+            Thread threadZZ = new Thread(AutoZZ);
+            threadZZ.Start();      
+        }
+
+
+
+
+        //自动征战线程，函数
+        private void AutoZZ()
+        {
+            //设置自动自行中，防止刷新
+            isAuto = true;
+            //设置鼠标的坐标，垂直滚动条向下箭头
+            SetCursorPos(1148, 678);
+            //鼠标左键按下并弹起（单击一次）
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //等待2秒
+            Thread.Sleep(2000);
+
+            //设置鼠标的坐标，征战图标
+            SetCursorPos(995, 669);
+            //鼠标左键按下并弹起（单击一次）
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //等待5秒
+            Thread.Sleep(5000);
+
+            //第二次征战标记
+            bool isSecondZZ = false;
+
+            for(int i=0; i<52; i++)
+            {
+                
+                //设置鼠标的坐标，进攻
+                SetCursorPos(669, 611);
+                //鼠标左键按下并弹起（单击一次）
+                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                //等待3秒
+                Thread.Sleep(3000);
+
+                //设置鼠标的坐标，跳过
+                SetCursorPos(1000, 675);
+                //鼠标左键按下并弹起（单击一次）
+                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                //等待2秒
+                Thread.Sleep(2000);
+
+                //设置鼠标的坐标，确定
+                SetCursorPos(667, 576);
+                //鼠标左键按下并弹起（单击一次）
+                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                //等待6秒
+                Thread.Sleep(6000);
+
+                //设置鼠标的坐标，奖品领取
+                SetCursorPos(751, 475);
+                //鼠标左键按下并弹起（单击一次）
+                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                //等待5秒
+                Thread.Sleep(5000);
+
+                //启用重新征战（每天可征战两次）
+                if (i == 50 && !isSecondZZ)
+                {
+                    isSecondZZ = true;      //第二次征战标记
+                    i = 0;                  //重置循环变量
+
+                    //设置鼠标的坐标，重新征战
+                    SetCursorPos(780, 611);
+                    //鼠标左键按下并弹起（单击一次）
+                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                    //等待6秒
+                    Thread.Sleep(3000);
+                }
+            }
+
+            //设置自动自行中，防止刷新
+            isAuto = false;
+        }
     }
 }
