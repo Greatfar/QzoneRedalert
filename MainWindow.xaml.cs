@@ -18,7 +18,8 @@ namespace RedAlert
         bool isLogin = false;                                   //登录状态。不能直接在复选框xml绑定的函数上关闭定时器，因为复选框初始化时，定时器还没创建，所以先记录下来
         System.Windows.Threading.DispatcherTimer timer;         //定时器变量
         bool isFresh = false;                                   //刷新状态。如果是刷新状态，则不再向配置文件写入数据
-        bool isAuto = false;
+        bool isAuto = false;                                    //自动脚本标记
+        Thread threadZZ = null;                                 //自动征战线程
 
 
         private Forms.NotifyIcon notifyIcon;                   //最小化到系统托盘变量
@@ -292,18 +293,18 @@ namespace RedAlert
 
 
 
-        //自动征战源代码
+        //自动征战-按钮点击事件响应函数
         private void zhengzhan_Click(object sender, RoutedEventArgs e)
         {
             //开启一条新的线程
-            Thread threadZZ = new Thread(AutoZZ);
+            threadZZ = new Thread(AutoZZ);
             threadZZ.Start();      
         }
 
 
 
 
-        //自动征战线程，函数
+        //自动征战-线程函数
         private void AutoZZ()
         {
             //设置自动自行中，防止刷新
@@ -326,8 +327,11 @@ namespace RedAlert
 
             //第二次征战标记
             bool isSecondZZ = false;
+            //读取配置文件中的征战次数
+            string strZZTime = ConfigurationManager.AppSettings["ZZTime"];
+            int zzTime = Convert.ToInt32(strZZTime);        //转换成整型
 
-            for(int i=0; i<52; i++)
+            for (int i=0; i< zzTime; i++)
             {
                 
                 //设置鼠标的坐标，进攻
@@ -359,11 +363,11 @@ namespace RedAlert
                 //鼠标左键按下并弹起（单击一次）
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                //等待5秒
-                Thread.Sleep(5000);
+                //等待8秒
+                Thread.Sleep(8000);
 
                 //启用重新征战（每天可征战两次）
-                if (i == 50 && !isSecondZZ)
+                if (i == (zzTime -2) && !isSecondZZ)
                 {
                     isSecondZZ = true;      //第二次征战标记
                     i = 0;                  //重置循环变量
@@ -374,12 +378,23 @@ namespace RedAlert
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                     //等待6秒
-                    Thread.Sleep(3000);
+                    Thread.Sleep(6000);
                 }
             }
 
             //设置自动自行中，防止刷新
             isAuto = false;
+        }
+
+
+
+        //停止脚本-按钮点击事件响应函数
+        private void stopAuto_Click(object sender, RoutedEventArgs e)
+        {
+            if(threadZZ != null)
+            { 
+                threadZZ.Abort();   //关闭自动征战线程
+            }
         }
     }
 }
