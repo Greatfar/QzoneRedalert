@@ -307,8 +307,19 @@ namespace RedAlert
         //自动征战-线程函数
         private void AutoZZ()
         {
-            //设置自动自行中，防止刷新
+            //设置自动脚本标记，防止刷新
             isAuto = true;
+
+            //------------通过点击垂直箭头，复位初始状态-------------------------------------------
+            //设置光标的坐标，垂直滚动条向上箭头
+            SetCursorPos(1148, 35);
+            //鼠标左键按下并弹起（单击一次），重复4次
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
             //设置鼠标的坐标，垂直滚动条向下箭头
             SetCursorPos(1148, 678);
             //鼠标左键按下并弹起（单击一次）
@@ -382,7 +393,7 @@ namespace RedAlert
                 }
             }
 
-            //设置自动自行中，防止刷新
+            //关闭自动脚本标记，进行刷新
             isAuto = false;
         }
 
@@ -395,6 +406,9 @@ namespace RedAlert
             { 
                 threadZZ.Abort();   //关闭自动征战线程
             }
+
+			//关闭自动脚本标记，进行刷新
+            isAuto = false;
         }
     }
 }
