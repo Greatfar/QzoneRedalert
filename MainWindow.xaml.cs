@@ -363,13 +363,12 @@ namespace RedAlert
 
             //等待5秒
             Thread.Sleep(5000);
-
-            bool isSecondZZ = false;                                            //第二次征战标记            
+            
             string strZZTime = ConfigurationManager.AppSettings["ZZTime"];      //读取配置文件中的征战次数
             int zzTime = Convert.ToInt32(strZZTime);                            //转换成整型
 
-            //循环进行每一场征战
-            for (int i = 0; i < zzTime; i++)
+            //循环进行每一场征战,通过x2让循环进行两次，因为一天可以进行两次征战
+            for (int i = 0; i < zzTime * 2; i++)
             {
                 //单击，进攻
                 SetCursorPos(669, 611);
@@ -390,7 +389,7 @@ namespace RedAlert
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待6秒
-                Thread.Sleep(6000);
+                Thread.Sleep(8000);
 
                 //单击，奖品领取，每通过一定的关卡后会弹出领取奖品框
                 SetCursorPos(751, 475);
@@ -398,20 +397,6 @@ namespace RedAlert
 
                 //等待8秒
                 Thread.Sleep(8000);
-
-                //启用重新征战（每天可征战两次）
-                if (i == (zzTime - 2) && !isSecondZZ)
-                {
-                    isSecondZZ = true;      //第二次征战标记
-                    i = 0;                  //重置循环变量
-
-                    //单击--重新征战
-                    SetCursorPos(780, 611);
-                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
-                    //等待6秒
-                    Thread.Sleep(6000);
-                }
             }
 
             //关闭由于点击“重新征战”弹出的重置机会已用完提醒框，否则无法正常关闭征战窗口
