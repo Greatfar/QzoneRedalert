@@ -20,6 +20,7 @@ namespace RedAlert
         bool isFresh = false;                                   //刷新状态。如果是刷新状态，则不再向配置文件写入数据
         bool isAuto = false;                                    //自动脚本标记
         Thread threadZZ = null;                                 //自动征战线程
+        Thread threadGet = null;                                //自动收集线程
 
 
         private Forms.NotifyIcon notifyIcon;                   //最小化到系统托盘变量
@@ -296,9 +297,28 @@ namespace RedAlert
         //自动征战-按钮点击事件响应函数
         private void zhengzhan_Click(object sender, RoutedEventArgs e)
         {
-            //开启一条新的线程
-            threadZZ = new Thread(AutoZZ);
-            threadZZ.Start();      
+            if (isAuto)     //如果有其他动作线程在执行，先关闭掉,防止多个动作相互干扰
+            {
+                MessageBoxResult result = MessageBox.Show("正在执行其他自动操作，是否停止它！", "警告", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    //关闭所有线程
+                    ShutdAllThread();
+                    //开启一条新的线程
+                    threadZZ = new Thread(AutoZZ);
+                    threadZZ.Start();
+                }
+            }else
+            {
+                //已经创建,则关闭当前线程
+                if (threadZZ != null)
+                {
+                    threadZZ.Abort();
+                }
+                //开启一条新的线程
+                threadZZ = new Thread(AutoZZ);
+                threadZZ.Start();
+            }
         }
 
 
@@ -306,6 +326,16 @@ namespace RedAlert
 
         //自动征战-线程函数
         private void AutoZZ()
+        {
+            //调用征战逻辑
+            ZZAction();
+        }
+
+
+
+
+        //征战动作逻辑函数
+        private void ZZAction()
         {
             //设置自动脚本标记，防止刷新
             isAuto = true;
@@ -342,9 +372,9 @@ namespace RedAlert
             string strZZTime = ConfigurationManager.AppSettings["ZZTime"];
             int zzTime = Convert.ToInt32(strZZTime);        //转换成整型
 
-            for (int i=0; i< zzTime; i++)
+            for (int i = 0; i < zzTime; i++)
             {
-                
+
                 //设置鼠标的坐标，进攻
                 SetCursorPos(669, 611);
                 //鼠标左键按下并弹起（单击一次）
@@ -378,7 +408,7 @@ namespace RedAlert
                 Thread.Sleep(8000);
 
                 //启用重新征战（每天可征战两次）
-                if (i == (zzTime -2) && !isSecondZZ)
+                if (i == (zzTime - 2) && !isSecondZZ)
                 {
                     isSecondZZ = true;      //第二次征战标记
                     i = 0;                  //重置循环变量
@@ -399,15 +429,314 @@ namespace RedAlert
 
 
 
+
         //停止脚本-按钮点击事件响应函数
         private void stopAuto_Click(object sender, RoutedEventArgs e)
         {
-            if(threadZZ != null)
-            { 
-                threadZZ.Abort();   //关闭自动征战线程
+            ShutdAllThread();
+        }
+
+
+
+        //关闭所有已开启的自动线程函数
+        private void ShutdAllThread()
+        {
+            //关闭自动征战线程
+            if (threadZZ != null)
+            {
+                threadZZ.Abort();   
+                threadZZ = null;
+            }
+            //关闭自动收集线程
+            if (threadGet != null)
+            {
+                threadGet.Abort();
+                threadGet = null;
             }
 
-			//关闭自动脚本标记，进行刷新
+            //关闭自动脚本标记，进行刷新
+            isAuto = false;
+        }
+
+
+
+
+        //自动收集-按钮点击事件响应函数
+        private void btn_autoGet_Click(object sender, RoutedEventArgs e)
+        {
+            if(isAuto)     //如果有其他动作线程在执行，先关闭掉,防止多个动作相互干扰
+            {
+                MessageBoxResult result = MessageBox.Show("正在执行其他自动操作，是否停止它！", "警告", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    ShutdAllThread();   //关闭所有线程
+                    //开启一条新的线程,用于自动收集
+                    threadGet = new Thread(AutoGet);
+                    threadGet.Start();
+                }
+            }else
+            {
+                //判断线程是否已经存在
+                if (threadGet != null)
+                {
+                    threadGet.Abort();  //关闭线程
+                }
+                //开启一条新的线程,用于自动收集
+                threadGet = new Thread(AutoGet);
+                threadGet.Start();
+            }
+        }
+
+
+
+
+        //自动收集-线程函数
+        private void AutoGet()
+        {
+            //调用自动收集逻辑函数
+            GetAction();
+        }
+
+
+
+
+        //自动收集逻辑函数
+        private void GetAction()
+        {
+            //设置自动脚本标记，防止刷新
+            isAuto = true;
+
+            //------------通过点击垂直箭头，复位初始状态-----------------------
+            //设置光标的坐标，垂直滚动条向上箭头
+            SetCursorPos(1148, 35);
+            //鼠标左键按下并弹起（单击），重复4次
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //单击，垂直滚动条向下箭头
+            SetCursorPos(1148, 678);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+            //单击，英雄图标
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(464, 668);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //--------单击----------小酌一杯-------------3次------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(466, 503);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待1秒
+            Thread.Sleep(1000);
+            SetCursorPos(466, 503);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待1秒
+            Thread.Sleep(1000);
+            SetCursorPos(466, 503);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待2秒
+            Thread.Sleep(2000);
+            //关闭勋章不足-对话框
+            SetCursorPos(850, 348);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------畅饮一日-------------1次------------------
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(673, 500);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待2秒
+            Thread.Sleep(2000);
+            //关闭勋章不足-对话框
+            SetCursorPos(850, 348);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------豪饮3日-------------1次------------------
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(872, 500);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待2秒
+            Thread.Sleep(2000);
+            //关闭勋章不足-对话框
+            SetCursorPos(850, 348);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------关闭英雄对话框-------------1次------------------
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(996, 170);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+            //单击，国家图标
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(568, 676);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------国家宝箱-------------1次------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(699, 405);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------领取-------------1次------------------
+            Thread.Sleep(5000);            //等待5秒
+            SetCursorPos(558, 350);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------关闭国家宝箱对话框-------------1次------------------
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(932, 170);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------关闭国家对话框-------------1次------------------
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(985, 186);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+
+            //单击，将领图标
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(680, 670);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------低级冶炼-------------3次------------------
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(464, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //确定
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(453, 497);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //第二次
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(464, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //确定
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(453, 497);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //第三次
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(464, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //确定
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(453, 497);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--勋章不足
+            Thread.Sleep(1000);            //等待3秒
+            SetCursorPos(848, 349);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //--------单击----------中级冶炼-------------3次------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(662, 490);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待1秒
+            //确定
+            SetCursorPos(662, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--勋章不足
+            Thread.Sleep(1000);            //等待3秒
+            SetCursorPos(848, 349);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //--------单击----------高级冶炼-------------3次------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(872, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待1秒
+            //确定
+            SetCursorPos(872, 493);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--勋章不足
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(848, 349);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+            //-------------------------关闭--将领对话框-----------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(990, 176);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+            //单击，武器中心图标
+            Thread.Sleep(3000);            //等待3秒
+            SetCursorPos(886, 673);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击----------免费探索-------------3次------------------
+            Thread.Sleep(8000);            //等待6秒
+            SetCursorPos(585, 516);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(585, 516);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(585, 516);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //单击确定
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(761, 469);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击-----------工厂--------------1次--------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(592, 263);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //点击--免费探索
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(453, 514);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--探索卡已用完
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(847, 365);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击-----------实验室--------------1次--------------------
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(662, 263);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //点击--免费探索
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(456, 516);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--探索卡已用完
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(852, 366);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--武器中心
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(991, 188);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+            //单击，战役图标
+            Thread.Sleep(2000);            //等待2秒
+            SetCursorPos(1044, 673);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击-----------战场--------------1次--------------------
+            Thread.Sleep(5000);            //等待5秒
+            SetCursorPos(728, 362);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //--------单击-----------扫荡--------------3次--------------------
+            Thread.Sleep(3000);            //等待5秒
+            SetCursorPos(756, 496);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待5秒
+            SetCursorPos(756, 496);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待5秒
+            SetCursorPos(756, 496);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //关闭--扫荡
+            Thread.Sleep(1000);            //等待5秒
+            SetCursorPos(852, 277);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //返回基地
+            Thread.Sleep(1000);            //等待5秒
+            SetCursorPos(1115, 677);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+
+
+            //关闭自动脚本标记，进行刷新
             isAuto = false;
         }
     }

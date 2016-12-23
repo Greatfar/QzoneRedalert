@@ -13,10 +13,11 @@
             <ColumnDefinition Width="38*"/>
         </Grid.ColumnDefinitions>
         <WebBrowser x:Name="web1" HorizontalAlignment="Left" Height="678" VerticalAlignment="Top" Width="965" Grid.ColumnSpan="2"/>
-        <CheckBox x:Name="checkBox" Content="自动刷新(默认5分钟刷新一次，防止被攻击)" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Margin="99,681,0,0" Height="19" Width="256"/>
-        <Button x:Name="button" Content="切换账号" HorizontalAlignment="Left" Margin="55.2,678,0,-1.837" VerticalAlignment="Top" Width="75" Click="button_Click" Height="23.837" Grid.Column="1"/>
-        <Button x:Name="zhengzhan" Content="自动征战" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="212.2,679,0,-0.837" Click="zhengzhan_Click" Grid.Column="1"/>
-        <Button x:Name="stopAuto" Content="停止脚本" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Grid.Column="1" Margin="360,679,0,-0.837" Click="stopAuto_Click"/>
+        <CheckBox x:Name="checkBox" Content="自动刷新(防止被攻击)" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Margin="85,681,0,0" Height="19" Width="256"/>
+        <Button x:Name="button" Content="切换账号" HorizontalAlignment="Left" Margin="350,677,0,-0.837" VerticalAlignment="Top" Width="75" Click="button_Click" Height="23.837" Grid.Column="1"/>
+        <Button x:Name="zhengzhan" Content="自动征战" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="43,679,0,-0.837" Click="zhengzhan_Click" Grid.Column="1"/>
+        <Button x:Name="stopAuto" Content="停止动作" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Grid.Column="1" Margin="198,678,0,0" Click="stopAuto_Click"/>
+        <Button x:Name="btn_autoGet" Content="自动收集" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="313,679,0,-0.837" Click="btn_autoGet_Click"/>
 
     </Grid>
 </Window>
