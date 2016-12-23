@@ -337,20 +337,19 @@ namespace RedAlert
         //征战动作逻辑函数
         private void ZZAction()
         {
-            //设置自动脚本标记，防止刷新
+            //设置自动脚本标记，防止页面被定时器刷新
             isAuto = true;
 
-            //------------通过点击垂直箭头，复位初始状态-------------------------------------------
-            //设置光标的坐标，垂直滚动条向上箭头
+            //------------通过点击垂直箭头，复位初始状态-----------------------
+            //单击4次，垂直滚动条向上箭头
             SetCursorPos(1148, 35);
-            //鼠标左键按下并弹起（单击一次），重复4次
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
 
-            //设置鼠标的坐标，垂直滚动条向下箭头
+            //单击1次，垂直滚动条向下箭头
             SetCursorPos(1148, 678);
             //鼠标左键按下并弹起（单击一次）
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
@@ -358,50 +357,43 @@ namespace RedAlert
             //等待2秒
             Thread.Sleep(2000);
 
-            //设置鼠标的坐标，征战图标
+            //单击，征战图标
             SetCursorPos(995, 669);
-            //鼠标左键按下并弹起（单击一次）
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
             //等待5秒
             Thread.Sleep(5000);
 
-            //第二次征战标记
-            bool isSecondZZ = false;
-            //读取配置文件中的征战次数
-            string strZZTime = ConfigurationManager.AppSettings["ZZTime"];
-            int zzTime = Convert.ToInt32(strZZTime);        //转换成整型
+            bool isSecondZZ = false;                                            //第二次征战标记            
+            string strZZTime = ConfigurationManager.AppSettings["ZZTime"];      //读取配置文件中的征战次数
+            int zzTime = Convert.ToInt32(strZZTime);                            //转换成整型
 
+            //循环进行每一场征战
             for (int i = 0; i < zzTime; i++)
             {
-
-                //设置鼠标的坐标，进攻
+                //单击，进攻
                 SetCursorPos(669, 611);
-                //鼠标左键按下并弹起（单击一次）
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待3秒
                 Thread.Sleep(3000);
 
-                //设置鼠标的坐标，跳过
+                //单击，跳过
                 SetCursorPos(1000, 675);
-                //鼠标左键按下并弹起（单击一次）
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待2秒
                 Thread.Sleep(2000);
 
-                //设置鼠标的坐标，确定
+                //单击，确定
                 SetCursorPos(667, 576);
-                //鼠标左键按下并弹起（单击一次）
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待6秒
                 Thread.Sleep(6000);
 
-                //设置鼠标的坐标，奖品领取
+                //单击，奖品领取，每通过一定的关卡后会弹出领取奖品框
                 SetCursorPos(751, 475);
-                //鼠标左键按下并弹起（单击一次）
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待8秒
@@ -413,9 +405,8 @@ namespace RedAlert
                     isSecondZZ = true;      //第二次征战标记
                     i = 0;                  //重置循环变量
 
-                    //设置鼠标的坐标，重新征战
+                    //单击--重新征战
                     SetCursorPos(780, 611);
-                    //鼠标左键按下并弹起（单击一次）
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                     //等待6秒
@@ -423,7 +414,12 @@ namespace RedAlert
                 }
             }
 
+            //关闭由于点击“重新征战”弹出的重置机会已用完提醒框，否则无法正常关闭征战窗口
+            SetCursorPos(848, 250);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
             //关闭征战窗口
+            Thread.Sleep(1000); 
             SetCursorPos(982, 192);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
@@ -510,16 +506,15 @@ namespace RedAlert
             //设置自动脚本标记，防止刷新
             isAuto = true;
 
-            //------------通过点击垂直箭头，复位初始状态-----------------------
-            //设置光标的坐标，垂直滚动条向上箭头
+            //------------通过调整垂直滚动条，复位初始状态-----------------------
+            //单击4次，垂直滚动条向上箭头
             SetCursorPos(1148, 35);
-            //鼠标左键按下并弹起（单击），重复4次
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-            //单击，垂直滚动条向下箭头
+            //单击1次，垂直滚动条向下箭头
             SetCursorPos(1148, 678);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
@@ -628,7 +623,6 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待3秒
             SetCursorPos(848, 349);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
             //--------单击----------中级冶炼-------------3次------------------
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(662, 490);
@@ -641,7 +635,6 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待3秒
             SetCursorPos(848, 349);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
             //--------单击----------高级冶炼-------------3次------------------
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(872, 493);
@@ -654,7 +647,6 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待1秒
             SetCursorPos(848, 349);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
             //-------------------------关闭--将领对话框-----------------------
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(990, 176);
@@ -667,7 +659,7 @@ namespace RedAlert
             SetCursorPos(886, 673);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //--------单击----------野外-------------3次------------------
-            Thread.Sleep(8000);            //等待8秒
+            Thread.Sleep(6000);            //等待8秒
             SetCursorPos(519, 263);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             Thread.Sleep(3000);            //等待3秒
@@ -723,21 +715,24 @@ namespace RedAlert
             SetCursorPos(728, 362);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //--------单击-----------扫荡--------------3次--------------------
-            Thread.Sleep(3000);            //等待5秒
+            Thread.Sleep(3000);            //等待3秒
             SetCursorPos(756, 496);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-            Thread.Sleep(1000);            //等待5秒
+            Thread.Sleep(1000);            //等待1秒
             SetCursorPos(756, 496);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-            Thread.Sleep(1000);            //等待5秒
+            Thread.Sleep(1000);            //等待1秒
             SetCursorPos(756, 496);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);            //等待1秒
+            SetCursorPos(864, 312);        //关闭消耗勋章获得行军令
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //关闭--扫荡
-            Thread.Sleep(1000);            //等待5秒
+            Thread.Sleep(1000);            //等待1秒
             SetCursorPos(852, 277);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //返回基地
-            Thread.Sleep(1000);            //等待5秒
+            Thread.Sleep(1000);            //等待1秒
             SetCursorPos(1115, 677);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
