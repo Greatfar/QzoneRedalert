@@ -423,6 +423,10 @@ namespace RedAlert
                 }
             }
 
+            //关闭征战窗口
+            SetCursorPos(982, 192);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
             //关闭自动脚本标记，进行刷新
             isAuto = false;
         }
@@ -662,8 +666,11 @@ namespace RedAlert
             Thread.Sleep(3000);            //等待3秒
             SetCursorPos(886, 673);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-            //--------单击----------免费探索-------------3次------------------
-            Thread.Sleep(8000);            //等待6秒
+            //--------单击----------野外-------------3次------------------
+            Thread.Sleep(8000);            //等待8秒
+            SetCursorPos(519, 263);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(3000);            //等待3秒
             SetCursorPos(585, 516);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             Thread.Sleep(1000);            //等待1秒
