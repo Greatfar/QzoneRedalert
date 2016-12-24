@@ -389,7 +389,7 @@ namespace RedAlert
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
                 //等待6秒
-                Thread.Sleep(8000);
+                Thread.Sleep(6000);
 
                 //单击，奖品领取，每通过一定的关卡后会弹出领取奖品框
                 SetCursorPos(751, 475);
@@ -539,6 +539,11 @@ namespace RedAlert
             //--------单击----------豪饮3日-------------1次------------------
             Thread.Sleep(1000);            //等待1秒
             SetCursorPos(872, 500);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //等待2秒
+            Thread.Sleep(2000);
+            //点击确定--恭喜你获得了改英雄
+            SetCursorPos(892, 508);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待2秒
             Thread.Sleep(2000);
