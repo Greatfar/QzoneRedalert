@@ -510,8 +510,9 @@ namespace RedAlert
             SetCursorPos(464, 668);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-            //--------单击----------小酌一杯-------------3次------------------
-            Thread.Sleep(2000);            //等待2秒
+            //------单击---- --小酌一杯------4次(偶数次，不会出现没有关闭)-----
+            //等待2秒
+            Thread.Sleep(2000);
             SetCursorPos(466, 503);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待1秒
@@ -519,6 +520,10 @@ namespace RedAlert
             SetCursorPos(466, 503);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待1秒
+            Thread.Sleep(1000);
+            SetCursorPos(466, 503);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+			//确定一次，防止第3次单击，出现获得英雄提醒框，没有关闭
             Thread.Sleep(1000);
             SetCursorPos(466, 503);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
