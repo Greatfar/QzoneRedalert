@@ -531,6 +531,10 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待1秒
             SetCursorPos(673, 500);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            //点击确定--恭喜你获得了该英雄
+            Thread.Sleep(2000);
+            SetCursorPos(666, 507);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待2秒
             Thread.Sleep(2000);
             //关闭勋章不足-对话框
@@ -542,7 +546,7 @@ namespace RedAlert
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待2秒
             Thread.Sleep(2000);
-            //点击确定--恭喜你获得了改英雄
+            //点击确定--恭喜你获得了该英雄
             SetCursorPos(892, 508);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             //等待2秒
