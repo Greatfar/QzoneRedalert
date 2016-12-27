@@ -22,8 +22,8 @@ namespace RedAlert
         Thread threadZZ = null;                                 //自动征战线程
         Thread threadGet = null;                                //自动收集线程
 
-
         private Forms.NotifyIcon notifyIcon;                   //最小化到系统托盘变量
+
 
         //-------------------------模拟鼠标事件常量------------------------
         const int MOUSEEVENTF_MOVE = 0x0001;        //移动鼠标
@@ -34,6 +34,17 @@ namespace RedAlert
         const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;  //模拟鼠标中键按下
         const int MOUSEEVENTF_MIDDLEUP = 0x0040;    //模拟鼠标中键抬起
         const int MOUSEEVENTF_ABSOLUTE = 0x8000;    //标示是否采用绝对坐标
+        //-------------------------------------------------------------------
+
+
+        //------------------------导入屏幕取色相关win32 api函数------------------------------------------
+        [DllImport("user32")]
+        private static extern int GetWindowDC(int hwnd);        //获取句柄
+        [DllImport("user32")]
+        private static extern int ReleaseDC(int hWnd, int hDC); //释放句柄
+        [DllImport("gdi32")]
+        private static extern int GetPixel(int hdc, int nXPos, int nYPos);  //获取指定点的颜色
+        //-----------------------------------------------------------------------------------------------
 
 
         //-------------------------导入windows API库函数用于模拟鼠标事件----------------------------------
@@ -45,7 +56,7 @@ namespace RedAlert
         static extern bool SetCursorPos(int X, int Y);
         //------------------------------------------------------------------------------------------------
 
-
+        
         //------------------------导入清空session用到的函数----------------------------------------------------------------
         private const int INTERNET_OPTION_END_BROWSER_SESSION = 42;
         [DllImport("wininet.dll", SetLastError = true)]
@@ -64,10 +75,11 @@ namespace RedAlert
 
             //--------------------------------------------程序驻留系统托盘----------------------------------------------------------
             this.notifyIcon = new Forms.NotifyIcon();
-            this.notifyIcon.BalloonTipText = "辅佐程序已经最小到系统托盘";
+            this.notifyIcon.BalloonTipText = "红警大战已最小化到后台运行";
             this.notifyIcon.ShowBalloonTip(2000);
             this.notifyIcon.Text = "红警大战";
-            this.notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);      //读取程序图标作为托盘图标
+            //读取程序图标作为托盘图标
+            this.notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
             this.notifyIcon.Visible = true;
             //添加系统托盘图标的-打开菜单项
             System.Windows.Forms.MenuItem open = new System.Windows.Forms.MenuItem("打开");
@@ -364,39 +376,74 @@ namespace RedAlert
             //等待5秒
             Thread.Sleep(5000);
             
-            string strZZTime = ConfigurationManager.AppSettings["ZZTime"];      //读取配置文件中的征战次数
-            int zzTime = Convert.ToInt32(strZZTime);                            //转换成整型
+            //定义3个用于屏幕取色的变量
+            Point p;            //屏幕中的一个点
+            int hdc;            //设备上下文句柄
+            int c;              //颜色变量
+            bool isReZZ = false;        //重新征战标记
 
-            //循环进行每一场征战,通过x2让循环进行两次，因为一天可以进行两次征战
-            for (int i = 0; i < zzTime * 2; i++)
+            //死循环，只有“征战按钮为灰色时终止循环”自动终止循环
+            while (true)
             {
+                //单击，确定。重置机会已用完，或者每通过10关卡获得一个礼包
+                SetCursorPos(751, 475);
+                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                Thread.Sleep(8000);      //等待8秒
+
+                //-----------------------判断“进攻”按钮的颜色---------------------------
+                hdc = GetWindowDC(0);            //获取设备上下文句柄(0是屏幕的设备上下文) 
+                c = GetPixel(hdc, 635, 611);     //获取指定点的颜色
+                ReleaseDC(0, hdc);
+                //如果按钮是灰色
+                if(c == 9276813)
+                {
+                    break;      //终止循环
+                }
+
                 //单击，进攻
                 SetCursorPos(669, 611);
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                //等待3秒
-                Thread.Sleep(3000);
+                Thread.Sleep(3000);         //等待3秒
 
                 //单击，跳过
                 SetCursorPos(1000, 675);
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                //等待2秒
-                Thread.Sleep(2000);
+                Thread.Sleep(2000);         //等待2秒
 
-                //单击，确定
-                SetCursorPos(667, 576);
-                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                //--------------判断第一颗星星的颜色--------------
+                hdc = GetWindowDC(0);
+                c = GetPixel(hdc, 451, 298);
+                ReleaseDC(0, hdc);
+                //如果第一颗星是灰色的
+                if (c == 8355711)
+                {
+                    //单击，确定。跳过后的确定
+                    SetCursorPos(667, 576);
+                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                    Thread.Sleep(8000);
+                    //判断是否第二次征战
+                    if (!isReZZ)
+                    {
+                        //单击，重新征战
+                        SetCursorPos(780, 562);
+                        mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                        //把第二次重新征战标识设置为真
+                        isReZZ = true;
+                    }else
+                    {
+                        break;         //已经第二次征战，并且该关卡失败，直接退出循环
+                    }
+                }else
+                {
+                    //单击，确定。跳过后的确定
+                    SetCursorPos(667, 576);
+                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                }
 
-                //等待6秒
-                Thread.Sleep(6000);
-
-                //单击，奖品领取，每通过一定的关卡后会弹出领取奖品框
-                SetCursorPos(751, 475);
-                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
-                //等待8秒
-                Thread.Sleep(8000);
+                Thread.Sleep(6000);      //等待6秒
             }
 
             //关闭由于点击“重新征战”弹出的重置机会已用完提醒框，否则无法正常关闭征战窗口
@@ -498,18 +545,15 @@ namespace RedAlert
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
             //单击1次，垂直滚动条向下箭头
             SetCursorPos(1148, 678);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
 
 
             //单击，英雄图标
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(464, 668);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
             //------单击---- --小酌一杯------4次(偶数次，不会出现没有关闭)-----
             //等待2秒
             Thread.Sleep(2000);
@@ -565,7 +609,6 @@ namespace RedAlert
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
 
-
             //单击，国家图标
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(568, 676);
@@ -586,8 +629,6 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待1秒
             SetCursorPos(985, 186);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
-
 
 
             //单击，将领图标
@@ -652,7 +693,6 @@ namespace RedAlert
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
 
-
             //单击，武器中心图标
             Thread.Sleep(3000);            //等待3秒
             SetCursorPos(886, 673);
@@ -704,7 +744,6 @@ namespace RedAlert
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
 
-
             //单击，战役图标
             Thread.Sleep(2000);            //等待2秒
             SetCursorPos(1044, 673);
@@ -734,7 +773,6 @@ namespace RedAlert
             Thread.Sleep(1000);            //等待1秒
             SetCursorPos(1115, 677);
             mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-
 
 
             //关闭自动脚本标记，进行刷新

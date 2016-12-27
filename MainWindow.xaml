@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:RedAlert"
         mc:Ignorable="d"
         Closing="MainWindow_Closing"
-        Title="QQ空间红警大战-辅助程序" Height="728" Width="972"  VerticalAlignment="Top" ResizeMode="CanMinimize">
+        Title="QQ空间红警大战" Height="728" Width="972"  VerticalAlignment="Top" ResizeMode="CanMinimize">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="31*"/>
