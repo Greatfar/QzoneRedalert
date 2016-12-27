@@ -120,8 +120,8 @@ namespace RedAlert
             long lastTime = long.Parse(strLastTime);        //字符串转long型
             //MessageBox.Show(lastTime);
 
-            //如果当前时间与上一次时间差距10个小时
-            if (((currentTime - lastTime) / 10000000) < 36000)
+            //如果当前时间与上一次时间差距5个小时
+            if (((currentTime - lastTime) / 10000000) < 18000)
             {
 
                 //从配置文件读取登录状态，Status
@@ -142,7 +142,7 @@ namespace RedAlert
                     web1.Navigate(uri);
                 }
             }
-            else          //如果相隔超过10个小时。因为免登陆URL大约12小时后会失效。
+            else          //如果相隔超过5个小时。因为免登陆URL大约5小时后会失效。
             {
 
                 //把当前时间写入配置文件
@@ -406,13 +406,13 @@ namespace RedAlert
                 SetCursorPos(669, 611);
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                Thread.Sleep(3000);         //等待3秒
+                Thread.Sleep(4000);         //等待3秒
 
                 //单击，跳过
                 SetCursorPos(1000, 675);
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                Thread.Sleep(2000);         //等待2秒
+                Thread.Sleep(3000);         //等待2秒
 
                 //--------------判断第一颗星星的颜色--------------
                 hdc = GetWindowDC(0);
@@ -429,7 +429,11 @@ namespace RedAlert
                     {
                         Thread.Sleep(12000);
                         //单击，重新征战
-                        SetCursorPos(780, 562);
+                        SetCursorPos(778, 613);
+                        mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                        Thread.Sleep(3000);
+                        //单击，确定
+                        SetCursorPos(562, 420);
                         mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                         //把第二次重新征战标识设置为真
                         isReZZ = true;
