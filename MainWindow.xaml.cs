@@ -386,11 +386,11 @@ namespace RedAlert
             //死循环，只有“征战按钮为灰色时终止循环”自动终止循环
             while (true)
             {
-                //单击，确定。重置机会已用完，或者每通过10关卡获得一个礼包
+                //单击，确定。每通过10关卡获得一个礼包
                 SetCursorPos(751, 475);
                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
-                Thread.Sleep(8000);      //等待8秒
+                Thread.Sleep(1000);      //等待1秒
 
                 //-----------------------判断“进攻”按钮的颜色---------------------------
                 hdc = GetWindowDC(0);            //获取设备上下文句柄(0是屏幕的设备上下文) 
@@ -431,10 +431,22 @@ namespace RedAlert
                         //单击，重新征战
                         SetCursorPos(778, 613);
                         mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                        Thread.Sleep(3000);
+                        Thread.Sleep(2000);
                         //单击，确定
                         SetCursorPos(562, 420);
                         mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                        Thread.Sleep(1000);
+                        //--------------判断是否已经用完重置机会--------------
+                        hdc = GetWindowDC(0);
+                        c = GetPixel(hdc, 590, 392);
+                        ReleaseDC(0, hdc);
+                        if(c == 988233)
+                        {
+                            //关闭-勋章不足
+                            SetCursorPos(848, 380);
+                            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                            break;      //退出循环
+                        }
                         //把第二次重新征战标识设置为真
                         isReZZ = true;
                     }else
@@ -448,7 +460,7 @@ namespace RedAlert
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                 }
 
-                Thread.Sleep(6000);      //等待6秒
+                Thread.Sleep(12000);
             }
 
             //关闭由于点击“重新征战”弹出的重置机会已用完提醒框，否则无法正常关闭征战窗口
