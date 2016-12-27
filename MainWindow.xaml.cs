@@ -423,10 +423,10 @@ namespace RedAlert
                     //单击，确定。跳过后的确定
                     SetCursorPos(667, 576);
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                    Thread.Sleep(8000);
                     //判断是否第二次征战
                     if (!isReZZ)
                     {
+                        Thread.Sleep(12000);
                         //单击，重新征战
                         SetCursorPos(780, 562);
                         mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
