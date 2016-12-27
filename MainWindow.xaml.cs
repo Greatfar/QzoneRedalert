@@ -112,15 +112,16 @@ namespace RedAlert
             timer.Interval = new TimeSpan(0, freshT, 0);                            //设置定时值：TimeSpan（时, 分， 秒）。freshT分钟刷新一次
 
             //获取取当前日期
-            string currentTime = System.DateTime.Now.ToString("yyyy-MM-dd");
-            //MessageBox.Show(currentTime);
+            long currentTime = System.DateTime.Now.Ticks;                           //获取当前时间的以100“毫微秒”为单位的值。1 毫微秒 = 10^-9 秒，100 毫微秒 = 10^-7 秒。   秒-毫秒-微秒-毫微秒：千进制。
+            //MessageBox.Show(currentTime);                                         //表示自 0001 年 1 月 1 日午夜 12:00:00 以来已经过的时间的以 100 毫微秒为间隔的间隔数
 
             //读取配置文件中的时间
-            string lastTime = ConfigurationManager.AppSettings["Date"];
+            string strLastTime = ConfigurationManager.AppSettings["Date"];
+            long lastTime = long.Parse(strLastTime);        //字符串转long型
             //MessageBox.Show(lastTime);
 
-            //判断当前时间和上次登录是否是同一天
-            if (lastTime == currentTime)
+            //如果当前时间与上一次时间差距10个小时
+            if (((currentTime - lastTime) / 10000000) < 36000)
             {
 
                 //从配置文件读取登录状态，Status
@@ -141,12 +142,12 @@ namespace RedAlert
                     web1.Navigate(uri);
                 }
             }
-            else          //如果不是同一天。因为免登陆URL一天后会失效。
+            else          //如果相隔超过10个小时。因为免登陆URL大约12小时后会失效。
             {
 
                 //把当前时间写入配置文件
                 Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                cfa.AppSettings.Settings["Date"].Value = currentTime;
+                cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
                 cfa.Save();
 
                 //打开红警登录页面
