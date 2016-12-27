@@ -16,7 +16,7 @@ assistant for Red Alert, the QQ zone game.
 
 3、定时器
 
-4、模拟鼠标、键盘事件
+4、调用win32 API模拟鼠标点击事件
 
 5、清空session，重新登录
 
@@ -27,5 +27,7 @@ assistant for Red Alert, the QQ zone game.
 8、驻留系统软件托盘
 
 9、重写窗口关闭事件响应函数
+
+10、调用win32 API获取屏幕中某一点的颜色值
 
 
