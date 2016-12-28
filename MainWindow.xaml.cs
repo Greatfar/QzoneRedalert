@@ -120,8 +120,8 @@ namespace RedAlert
             long lastTime = long.Parse(strLastTime);        //字符串转long型
             //MessageBox.Show(lastTime);
 
-            //如果当前时间与上一次时间差距5个小时
-            if (((currentTime - lastTime) / 10000000) < 18000)
+            //如果当前时间与上一次时间差距10个小时
+            if (((currentTime - lastTime) / 10000000) < 36000)
             {
 
                 //从配置文件读取登录状态，Status
@@ -142,7 +142,7 @@ namespace RedAlert
                     web1.Navigate(uri);
                 }
             }
-            else          //如果相隔超过5个小时。因为免登陆URL大约5小时后会失效。
+            else          //如果相隔超过10个小时。因为免登陆URL大约10小时后会失效。
             {
 
                 //把当前时间写入配置文件
@@ -421,13 +421,13 @@ namespace RedAlert
                 //如果第一颗星是灰色的
                 if (c == 8355711)
                 {
-                    //单击，确定。跳过后的确定
+                    //单击，确定
                     SetCursorPos(667, 576);
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                    Thread.Sleep(13000);    //等待13秒
                     //判断是否第二次征战
                     if (!isReZZ)
                     {
-                        Thread.Sleep(12000);
                         //单击，重新征战
                         SetCursorPos(778, 613);
                         mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
@@ -440,7 +440,7 @@ namespace RedAlert
                         hdc = GetWindowDC(0);
                         c = GetPixel(hdc, 590, 392);
                         ReleaseDC(0, hdc);
-                        if(c == 988233)
+                        if(c == 988233)     //红色提示框
                         {
                             //关闭-勋章不足
                             SetCursorPos(848, 380);
@@ -451,21 +451,17 @@ namespace RedAlert
                         isReZZ = true;
                     }else
                     {
-                        break;         //已经第二次征战，并且该关卡失败，直接退出循环
+                        break;                  //已经第二次征战，并且该关卡失败，直接退出循环
                     }
                 }else
                 {
-                    //单击，确定。跳过后的确定
+                    //单击，确定。
                     SetCursorPos(667, 576);
                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                 }
 
-                Thread.Sleep(12000);
+                Thread.Sleep(15000);
             }
-
-            //关闭由于点击“重新征战”弹出的重置机会已用完提醒框，否则无法正常关闭征战窗口
-            SetCursorPos(848, 250);
-            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 
             //关闭征战窗口
             Thread.Sleep(1000); 
