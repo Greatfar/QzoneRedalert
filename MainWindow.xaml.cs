@@ -5,6 +5,8 @@ using System.Configuration;
 using System.Runtime.InteropServices;       //清空session时用到
 using Forms = System.Windows.Forms;         //最小化到系统托盘
 using System.Threading;
+using System.Windows.Threading;
+using System.Windows.Controls;
 
 namespace RedAlert
 {
@@ -21,8 +23,15 @@ namespace RedAlert
         bool isAuto = false;                                    //自动脚本标记
         Thread threadZZ = null;                                 //自动征战线程
         Thread threadGet = null;                                //自动收集线程
+        Thread threadLogin = null;                              //登录线程
+        string str_qq = "";                                     //用户名
+        string str_pwd = "";                                    //密码
+        int accNum = 0;                                         //配置文件中保存的QQ账号个数
+        int dfNum = 0;                                          //默认登录的QQ序号
 
-        private Forms.NotifyIcon notifyIcon;                   //最小化到系统托盘变量
+        private Forms.NotifyIcon notifyIcon;                    //最小化到系统托盘变量
+
+        public delegate void delegate_login();                  //定义委托函数
 
 
         //-------------------------模拟鼠标事件常量------------------------
@@ -34,7 +43,6 @@ namespace RedAlert
         const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;  //模拟鼠标中键按下
         const int MOUSEEVENTF_MIDDLEUP = 0x0040;    //模拟鼠标中键抬起
         const int MOUSEEVENTF_ABSOLUTE = 0x8000;    //标示是否采用绝对坐标
-        //-------------------------------------------------------------------
 
 
         //------------------------导入屏幕取色相关win32 api函数------------------------------------------
@@ -44,7 +52,6 @@ namespace RedAlert
         private static extern int ReleaseDC(int hWnd, int hDC); //释放句柄
         [DllImport("gdi32")]
         private static extern int GetPixel(int hdc, int nXPos, int nYPos);  //获取指定点的颜色
-        //-----------------------------------------------------------------------------------------------
 
 
         //-------------------------导入windows API库函数用于模拟鼠标事件----------------------------------
@@ -54,14 +61,12 @@ namespace RedAlert
         //导入设置鼠标位置外部函数
         [DllImport("user32.dll")]
         static extern bool SetCursorPos(int X, int Y);
-        //------------------------------------------------------------------------------------------------
 
         
         //------------------------导入清空session用到的函数----------------------------------------------------------------
         private const int INTERNET_OPTION_END_BROWSER_SESSION = 42;
         [DllImport("wininet.dll", SetLastError = true)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int lpdwBufferLength);
-        //------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -95,7 +100,6 @@ namespace RedAlert
             {
                 if (e.Button == Forms.MouseButtons.Left) this.Show(o, e);
             });
-            //-----------------------------------------------------------------------------------------------------------------------
 
 
             //指定窗口显示位置
@@ -111,6 +115,29 @@ namespace RedAlert
             timer.Tick += new EventHandler(timer_Refresh);                          //为定时器时间绑定调用函数
             timer.Interval = new TimeSpan(0, freshT, 0);                            //设置定时值：TimeSpan（时, 分， 秒）。freshT分钟刷新一次
 
+            //初始化账号、密码输入框
+            string strNum = ConfigurationManager.AppSettings["Default_QQ"];
+            dfNum = Convert.ToInt16(strNum);
+            string df_qq = "QQ" + dfNum.ToString();
+            string df_mm = "MM" + dfNum.ToString();
+            //读取账号密码,填充文本框
+            str_qq = qq_textbox.Text = ConfigurationManager.AppSettings[df_qq];
+            str_pwd = passwordBox.Password = ConfigurationManager.AppSettings[df_mm];
+
+            //获取账号个数
+            string straccNum = ConfigurationManager.AppSettings["Account_Num"];
+            accNum = Convert.ToInt16(straccNum);
+            //添加进组合框中
+            for(int i=0; i<accNum; i++)
+            {
+                int j = i + 1;
+                string cfgqq = "QQ" + j.ToString();
+                string qq = ConfigurationManager.AppSettings[cfgqq];
+                ComboBoxItem qq_item = new ComboBoxItem();
+                qq_item.Content = qq;
+                comboBox.Items.Add(qq_item);
+            }
+            
             //获取取当前日期
             long currentTime = System.DateTime.Now.Ticks;                           //获取当前时间的以100“毫微秒”为单位的值。1 毫微秒 = 10^-9 秒，100 毫微秒 = 10^-7 秒。   秒-毫秒-微秒-毫微秒：千进制。
             //MessageBox.Show(currentTime);                                         //表示自 0001 年 1 月 1 日午夜 12:00:00 以来已经过的时间的以 100 毫微秒为间隔的间隔数
@@ -120,43 +147,44 @@ namespace RedAlert
             long lastTime = long.Parse(strLastTime);        //字符串转long型
             //MessageBox.Show(lastTime);
 
-            //如果当前时间与上一次时间差距10个小时
-            if (((currentTime - lastTime) / 10000000) < 36000)
+            //从配置文件读取登录状态，Status
+            string myStatus = ConfigurationManager.AppSettings["Status"];
+            //判断是否第一次登录
+            if (myStatus == "secondtime")
             {
-
-                //从配置文件读取登录状态，Status
-                string myStatus = ConfigurationManager.AppSettings["Status"];
-
-                //判断是否第一次登录
-                if (myStatus == "secondtime")
+                //10小时内使用免登陆URL
+                if (((currentTime - lastTime) / 10000000) < 36000)
                 {
                     game_url = ConfigurationManager.AppSettings["Game"];            //从配置配置文件读取免登陆URL
                     Uri uri = new Uri(game_url);                                    //URL转换为URI
                     web1.Navigate(uri);                                             //web控件载入URL
                     timer.Start();                                                  //启动定时器
                 }
-                else
+                else          //大约10小时后重新登录
                 {
-                    //打开红警登录页面
-                    Uri uri = new Uri("http://qqapp.qq.com/app/100616028.html");
-                    web1.Navigate(uri);
+                    //把当前时间写入配置文件
+                    Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
+                    cfa.Save();
+                    //调用登录函数，进行重新登录
+                    GameLogin();
                 }
             }
-            else          //如果相隔超过10个小时。因为免登陆URL大约10小时后会失效。
+            else
             {
-
+                //打开QQ空间登录跳转页面
+                Uri uri = new Uri("http://i.qq.com/?s_url=http%3A%2F%2Fmy.qzone.qq.com%2Fapp%2F100616028.html#via=appcenter.info");
+                web1.Navigate(uri);
                 //把当前时间写入配置文件
                 Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
                 cfa.Save();
-
-                //打开红警登录页面
-                Uri uri = new Uri("http://qqapp.qq.com/app/100616028.html");
-                web1.Navigate(uri);
             }
 
             //绑定文档加载完成的回调函数，到web控件中,onLoadDocCompleted
             web1.LoadCompleted += new LoadCompletedEventHandler(onLoadDocCompleted);
+
+            
 
         }
 
@@ -790,6 +818,172 @@ namespace RedAlert
 
             //关闭自动脚本标记，进行刷新
             isAuto = false;
+        }
+
+
+
+
+        //登录按钮点击-响应函数
+        private void login_btn_Click(object sender, RoutedEventArgs e)
+        {
+            bool isSaveAcc = true;          //保存QQ标识
+
+            //判断QQ号码是否已经存在配置文件中
+            for (int i = 0; i < accNum; i++)
+            {
+                int j = i + 1;
+                string the_qq = "QQ" + j.ToString();
+                string cfgQQ = ConfigurationManager.AppSettings[the_qq];
+                if (cfgQQ == qq_textbox.Text)
+                {
+                    //把默认QQ改成当前序号
+                    Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    cfa.AppSettings.Settings["Default_QQ"].Value = j.ToString();
+                    cfa.Save();
+                    isSaveAcc = false;
+                    break;  //退出循环
+                }
+            }
+
+            //是否保存QQ
+            if (isSaveAcc)
+            {
+                str_qq = qq_textbox.Text;
+                str_pwd = passwordBox.Password;
+                //把用户名和密码写入配置文件
+                accNum++;
+                string cfg_qq = "QQ" + accNum.ToString();
+                string cfg_mm = "MM" + accNum.ToString();
+                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                cfa.AppSettings.Settings[cfg_qq].Value = str_qq;
+                cfa.AppSettings.Settings[cfg_mm].Value = str_pwd;
+                cfa.AppSettings.Settings["Account_Num"].Value = accNum.ToString();
+                cfa.AppSettings.Settings["Default_QQ"].Value = accNum.ToString();
+                cfa.Save();
+            }
+            //调用登录函数
+            GameLogin();
+        }
+
+
+
+        //登录函数
+        private void GameLogin()
+        {
+            //清空session
+            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_END_BROWSER_SESSION, IntPtr.Zero, 0);
+
+            //启动登录线程
+            threadLogin = new Thread(login_acttion);
+            threadLogin.Start();
+        }
+
+
+
+
+        //登录线程函数
+        private void login_acttion()
+        {
+            //---------------------------使用委托函数操作父线程的控件-----------------------------------
+            //打开登录页面
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(OpenQzone));
+            //改变网页框架
+            Thread.Sleep(2000);
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(SelectLoginiFrame));
+            //切换--账号密码登录方式
+            Thread.Sleep(2000);
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(SwitchToPlogin));
+            //输入QQ账号
+            Thread.Sleep(1000);
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(InputQQ));
+            //触发QQ输入框的失去焦点js函数
+            Thread.Sleep(1000);
+            SetCursorPos(675, 343);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);
+            SetCursorPos(675, 396);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(1000);
+            //输入密码并提交
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(InputPassword));
+            Thread.Sleep(1000);
+            //输入密码并提交
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(Submit));
+        }
+
+
+
+
+        //切换账号-按钮点击响应函数
+        private void change_btn_Click(object sender, RoutedEventArgs e)
+        {
+            //获取组合框选中索引值
+            int cbi = comboBox.SelectedIndex;
+            cbi++;      //转化为QQ在配置文件中的序号
+            string qq_index = "QQ" + cbi.ToString();
+            string mm_index = "MM" + cbi.ToString();
+            str_qq = ConfigurationManager.AppSettings[qq_index];
+            str_pwd = ConfigurationManager.AppSettings[mm_index];
+            //调用登录函数
+            GameLogin();
+        }
+
+
+
+
+
+        //委托函数--转到框架
+        private void OpenQzone()
+        {
+            Uri uri = new Uri("http://i.qq.com/?s_url=http%3A%2F%2Fmy.qzone.qq.com%2Fapp%2F100616028.html#via=appcenter.info");
+            web1.Navigate(uri);
+        }
+        //委托函数--转到框架
+        private void SelectLoginiFrame()
+        {
+            mshtml.IHTMLDocument2 doc = (mshtml.IHTMLDocument2)web1.Document;
+            mshtml.IHTMLElement l_iframe = (mshtml.IHTMLElement)doc.all.item("login_frame", 0);
+            string zoneurl = (string)l_iframe.getAttribute("src");
+            Uri li_uri = new Uri(zoneurl);
+            web1.Navigate(li_uri);
+        }
+        //委托函数--切换登录方式
+        private void SwitchToPlogin()
+        {
+            mshtml.IHTMLDocument2 doc = (mshtml.IHTMLDocument2)web1.Document;
+            mshtml.IHTMLElement plogin = (mshtml.IHTMLElement)doc.all.item("switcher_plogin", 0);
+            plogin.click();
+        }
+        //委托函数--输入QQ号码
+        private void InputQQ()
+        {
+            mshtml.IHTMLDocument2 doc = (mshtml.IHTMLDocument2)web1.Document;
+            mshtml.IHTMLElement usr = (mshtml.IHTMLElement)doc.all.item("u", 0);
+            usr.setAttribute("value", str_qq);
+        }
+        //委托函数--输入密码并点击登录
+        private void InputPassword()
+        {
+            mshtml.IHTMLDocument2 doc = (mshtml.IHTMLDocument2)web1.Document;
+            mshtml.IHTMLElement password = (mshtml.IHTMLElement)doc.all.item("p", 0);
+            password.setAttribute("value", str_pwd);
+        }
+        //委托函数--提交表单
+        private void Submit()
+        {
+            mshtml.IHTMLDocument2 doc = (mshtml.IHTMLDocument2)web1.Document;
+            mshtml.IHTMLElement submit = (mshtml.IHTMLElement)doc.all.item("login_button", 0);
+            submit.click();
+        }
+
+
+
+
+        //刷新按钮-点击事件
+        private void Refresh_btn_Click(object sender, RoutedEventArgs e)
+        {
+            Uri uri = new Uri(game_url);
+            web1.Navigate(uri);
         }
     }
 }
