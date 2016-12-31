@@ -15,11 +15,10 @@ namespace RedAlert
     /// </summary>
     public partial class MainWindow : Window
     {
-        //类成员变量
         string game_url;                                        //免登陆URL
         bool isLogin = false;                                   //登录状态
         System.Windows.Threading.DispatcherTimer timer;         //定时器变量
-        bool isFresh = false;                                   //刷新状态。如果是刷新状态，则不再向配置文件写入数据
+        bool isFresh = false;                                   //刷新状态标识
         bool isAuto = false;                                    //自动脚本标记
         Thread threadZZ = null;                                 //自动征战线程
         Thread threadGet = null;                                //自动收集线程
@@ -27,44 +26,44 @@ namespace RedAlert
         string str_qq = "";                                     //用户名
         string str_pwd = "";                                    //密码
         int accNum = 0;                                         //配置文件中保存的QQ账号个数
-        int dfNum = 0;                                          //默认登录的QQ序号
-        int lastAccNum = 0;                                         //账号超过10个时，才使用
+        int dfQQ = 0;                                           //默认登录的QQ序号
+        int lastAccNum = 0;                                     //账号溢出指针
 
-        private Forms.NotifyIcon notifyIcon;                    //最小化到系统托盘变量
+        private Forms.NotifyIcon notifyIcon;                    //系统托盘图标变量
 
         public delegate void delegate_login();                  //定义委托函数
 
 
-        //-------------------------模拟鼠标事件常量------------------------
+        //----------------模拟鼠标事件常量--------------------
         const int MOUSEEVENTF_MOVE = 0x0001;        //移动鼠标
-        const int MOUSEEVENTF_LEFTDOWN = 0x0002;    //模拟鼠标左键按下
-        const int MOUSEEVENTF_LEFTUP = 0x0004;      //模拟鼠标左键抬起
-        const int MOUSEEVENTF_RIGHTDOWN = 0x0008;   //模拟鼠标右键按下
-        const int MOUSEEVENTF_RIGHTUP = 0x0010;     //模拟鼠标右键抬起
-        const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;  //模拟鼠标中键按下
-        const int MOUSEEVENTF_MIDDLEUP = 0x0040;    //模拟鼠标中键抬起
-        const int MOUSEEVENTF_ABSOLUTE = 0x8000;    //标示是否采用绝对坐标
+        const int MOUSEEVENTF_LEFTDOWN = 0x0002;    //左键按下
+        const int MOUSEEVENTF_LEFTUP = 0x0004;      //左键抬起
+        const int MOUSEEVENTF_RIGHTDOWN = 0x0008;   //右键按下
+        const int MOUSEEVENTF_RIGHTUP = 0x0010;     //右键抬起
+        const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;  //中键按下
+        const int MOUSEEVENTF_MIDDLEUP = 0x0040;    //中键抬起
+        const int MOUSEEVENTF_ABSOLUTE = 0x8000;    //采用绝对坐标
 
 
-        //------------------------导入屏幕取色相关win32 api函数------------------------------------------
-        [DllImport("user32")]
-        private static extern int GetWindowDC(int hwnd);        //获取句柄
-        [DllImport("user32")]
-        private static extern int ReleaseDC(int hWnd, int hDC); //释放句柄
-        [DllImport("gdi32")]
-        private static extern int GetPixel(int hdc, int nXPos, int nYPos);  //获取指定点的颜色
-
-
-        //-------------------------导入windows API库函数用于模拟鼠标事件----------------------------------
-        //声明库中的鼠标事件函数
+        //-------------------------导入模拟鼠标事件的win32 api函数----------------------------------
+        //鼠标事件函数
         [System.Runtime.InteropServices.DllImport("user32")]
         private static extern int mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
-        //导入设置鼠标位置外部函数
+        //设置光标位置函数
         [DllImport("user32.dll")]
         static extern bool SetCursorPos(int X, int Y);
 
+
+        //-------------导入屏幕取色相关win32 api函数-------------------
+        [DllImport("user32")]
+        private static extern int GetWindowDC(int hwnd);        //获取窗口句柄函数
+        [DllImport("user32")]
+        private static extern int ReleaseDC(int hWnd, int hDC); //释放窗口句柄函数
+        [DllImport("gdi32")]
+        private static extern int GetPixel(int hdc, int nXPos, int nYPos);  //获取指定点的颜色函数
+
         
-        //------------------------导入清空session用到的函数----------------------------------------------------------------
+        //----------------------------------导入清空session用到的windows api函数------------------------------------------
         private const int INTERNET_OPTION_END_BROWSER_SESSION = 42;
         [DllImport("wininet.dll", SetLastError = true)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int lpdwBufferLength);
@@ -77,7 +76,7 @@ namespace RedAlert
     /// </summary>
     public MainWindow()
         {
-            InitializeComponent();      //初始化组件
+            InitializeComponent();  //初始化组件（系统默认调用）
 
             InitDisplay();          //初始化显示状态
 
@@ -87,6 +86,7 @@ namespace RedAlert
 
             CheckLoginStatus();     //检查登录状态
         }
+
 
 
 
@@ -121,24 +121,28 @@ namespace RedAlert
             WindowStartupLocation = WindowStartupLocation.Manual;       //自定义窗口显示位置
             this.Top = 0;                       //距离顶部
             this.Left = 188;                    //距离左边
+
+
+            //绑定web控件的文档加载完成的回调函数，到web控件中,onLoadDocCompleted
+            web1.LoadCompleted += new LoadCompletedEventHandler(onLoadDocCompleted);
         }
+
 
 
 
         //刷新初始化函数
         private void InitRefresh()
         {
-            string strFreshT = ConfigurationManager.AppSettings["FreshT"];          //从配置文件读取刷新周期FreshT
-            int freshT = Convert.ToInt32(strFreshT);                                //转换成整形，赋值给定时器周期变量
+            //读取刷新周期
+            string strFreshT = ConfigurationManager.AppSettings["FreshT"];
+            int freshT = Convert.ToInt32(strFreshT);
 
-            //设置定时器
+            //生成定时器对象，并设置好参数
             timer = new System.Windows.Threading.DispatcherTimer();
-            timer.Tick += new EventHandler(timer_Refresh);                          //为定时器时间绑定调用函数
-            timer.Interval = new TimeSpan(0, freshT, 0);                            //设置定时值：TimeSpan（时, 分， 秒）。freshT分钟刷新一次
-
-            //绑定文档加载完成的回调函数，到web控件中,onLoadDocCompleted
-            web1.LoadCompleted += new LoadCompletedEventHandler(onLoadDocCompleted);
+            timer.Tick += new EventHandler(timer_Refresh);      //绑定时间到达时的回调函数
+            timer.Interval = new TimeSpan(0, freshT, 0);        //设置定时器时钟：TimeSpan（时, 分， 秒）。freshT分钟刷新一次
         }
+
 
 
 
@@ -147,9 +151,9 @@ namespace RedAlert
         {
             //初始化账号、密码输入框
             string strNum = ConfigurationManager.AppSettings["Default_QQ"];
-            dfNum = Convert.ToInt16(strNum);
-            string df_qq = "QQ" + dfNum.ToString();
-            string df_mm = "MM" + dfNum.ToString();
+            dfQQ = Convert.ToInt16(strNum);
+            string df_qq = "QQ" + dfQQ.ToString();
+            string df_mm = "MM" + dfQQ.ToString();
             str_qq = qq_textbox.Text = ConfigurationManager.AppSettings[df_qq];
             str_pwd = passwordBox.Password = ConfigurationManager.AppSettings[df_mm];
 
@@ -167,7 +171,7 @@ namespace RedAlert
                 qq_item.Content = qq;
                 comboBox.Items.Add(qq_item);
             }
-            comboBox.SelectedIndex = dfNum - 1;     //设置组合框默认显示项
+            comboBox.SelectedIndex = dfQQ - 1;     //设置组合框默认显示项
 
             lastAccNum = Convert.ToInt16(ConfigurationManager.AppSettings["Last_accNum"]);  //读取上一次账号溢出值
             if (lastAccNum == 10) { lastAccNum = 0; }                                       //重置溢出值
@@ -175,20 +179,23 @@ namespace RedAlert
 
 
 
+
         //检查登录状态函数
         private void CheckLoginStatus()
         {
-            //获取取当前日期
-            long currentTime = System.DateTime.Now.Ticks;                           //获取当前时间的以100“毫微秒”为单位的值。1 毫微秒 = 10^-9 秒，100 毫微秒 = 10^-7 秒。   秒-毫秒-微秒-毫微秒：千进制。
-            //MessageBox.Show(currentTime);                                         //表示自 0001 年 1 月 1 日午夜 12:00:00 以来已经过的时间的以 100 毫微秒为间隔的间隔数
+            //打开配置文件
+            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            //获取当前时间的以100“毫微秒”为单位的值。
+            long currentTime = System.DateTime.Now.Ticks;
 
             //读取配置文件中的时间
             string strLastTime = ConfigurationManager.AppSettings["Date"];
-            long lastTime = long.Parse(strLastTime);        //字符串转long型
-            //MessageBox.Show(lastTime);
+            long lastTime = long.Parse(strLastTime);
 
-            //从配置文件读取登录状态，Status
+            //从配置文件读取登录状态
             string myStatus = ConfigurationManager.AppSettings["Status"];
+
             //判断是否第一次登录
             if (myStatus == "secondtime")
             {
@@ -200,26 +207,21 @@ namespace RedAlert
                     web1.Navigate(uri);                                             //web控件载入URL
                     timer.Start();                                                  //启动定时器
                 }
-                else          //大约10小时后重新登录
+                else    //10小时后，免登陆URL失效
                 {
-                    //把当前时间写入配置文件
-                    Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                    cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
-                    cfa.Save();
-                    //调用登录函数，进行重新登录
-                    GameLogin();
+                    cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();    //把当前时间写入配置文件
+                    GameLogin();      //调用登录函数，进行重新登录
                 }
             }
-            else
+            else    //第一次登录
             {
                 //打开QQ空间登录跳转页面
                 Uri uri = new Uri("http://i.qq.com/?s_url=http%3A%2F%2Fmy.qzone.qq.com%2Fapp%2F100616028.html#via=appcenter.info");
                 web1.Navigate(uri);
                 //把当前时间写入配置文件
-                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
-                cfa.Save();
             }
+            cfa.Save();     //保存配置文件
         }
 
 
@@ -257,14 +259,14 @@ namespace RedAlert
                     //把提取到的免登陆URL写入配置文件
                     Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                     cfa.AppSettings.Settings["Game"].Value = game_url;               //写入游戏URL
-                    cfa.AppSettings.Settings["Status"].Value = "secondtime";         //写入登录次数标记，用于第二次免登陆
+                    cfa.AppSettings.Settings["Status"].Value = "secondtime";         //写入第二次登录标记
                     cfa.Save();
-                    //web控件重新载入免登陆URL。可达到去除腾讯QQ空间网页应用的外部框架，去除广告的目的目的。
+                    //重新载入免登陆URL。目的：去除腾讯QQ空间的外部框架，去除广告。
                     Uri uri = new Uri(game_url);
                     web1.Navigate(uri);
                     //启动定时器，用于刷新计时
                     timer.Start();
-                    //把刷新状态改为真，表示当前是刷新状态
+                    //把刷新状态改为真，进入刷新状态。网页加载完成不再执行提取操作。
                     isFresh = true;
                 }
             }
@@ -273,25 +275,25 @@ namespace RedAlert
 
 
 
-        //复选框选中时自动调用，在xaml中绑定
+        //复选框选中时自动调用，（在xaml中绑定了该函数）
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            isLogin = true;
+            isLogin = true;         //登录状态置为真。放行刷新动作。
         }
 
 
 
 
-        //复选框取消选中时自动调用，在xaml中绑定
+        //复选框取消选中时自动调用，（在xaml中绑定了该函数）
         private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            isLogin = false;
+            isLogin = false;        //登录状态置为假。组织刷新动作
         }
 
 
 
 
-        //切换账号，按钮点击事件函数
+        //退出按钮，点击事件回调函数
         private void button_Click(object sender, RoutedEventArgs e)
         {
             //改变配置文件文件中的登录状态、免登陆URL。达到再次启动应用时自动打开登录页面
@@ -303,15 +305,12 @@ namespace RedAlert
             //清空session
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_END_BROWSER_SESSION, IntPtr.Zero, 0);
 
-            //重新跳转到登录页面
+            //跳转到登录页面
             Uri uri = new Uri("http://qqapp.qq.com/app/100616028.html");
             web1.Navigate(uri);
 
-            //把刷新状态改为未刷新，保证切换账号后，依然会自动获取免登陆URL，并重新载入
+            //把刷新状态置为假。让文档加载完成时的提取免登陆url。
             isFresh = false;
-
-            //消息提醒框
-            // MessageBox.Show("登录要切换的QQ，可快速切换游戏", "提示");
         }
 
 
@@ -347,22 +346,22 @@ namespace RedAlert
 
 
 
-        //重写关闭按钮（窗口右上角关闭按钮）实现方法。（已经通过xaml绑定）
+        //重写关闭按钮回调方法。（在xaml中绑定了该函数）
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             MessageBoxResult result = MessageBox.Show("是否最小化到系统托盘，后台运行？", "关闭选项", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
                 Hide();             //调用隐藏窗口方法
-                e.Cancel = true;    //并向窗口传递取消关闭
+                e.Cancel = true;    //并向窗口传递取消关闭消息
             }
             else if (result == MessageBoxResult.No)
             {
-                e.Cancel = false;   //向窗口传递不取消关闭窗口消息
+                e.Cancel = false;   //取消关闭，置为假
             }
             else
             {
-                e.Cancel = true;        //取消关闭窗口
+                e.Cancel = true;    //取消关闭窗口
             }
         }
 
@@ -537,7 +536,7 @@ namespace RedAlert
 
 
 
-        //停止脚本-按钮点击事件响应函数
+        //停止动作按钮，点击事件回调函数
         private void stopAuto_Click(object sender, RoutedEventArgs e)
         {
             ShutdAllThread();
@@ -545,7 +544,8 @@ namespace RedAlert
 
 
 
-        //关闭所有已开启的自动线程函数
+
+        //关闭所有自动线程函数
         private void ShutdAllThread()
         {
             //关闭自动征战线程
@@ -560,9 +560,7 @@ namespace RedAlert
                 threadGet.Abort();
                 threadGet = null;
             }
-
-            //关闭自动脚本标记，进行刷新
-            isAuto = false;
+            isAuto = false;     //自动标识置为假，放行刷新。
         }
 
 
@@ -857,13 +855,11 @@ namespace RedAlert
 
 
 
-        //登录按钮点击-响应函数
+        //登录按钮-点击事件回调函数
         private void login_btn_Click(object sender, RoutedEventArgs e)
         {
             SavePassport();         //保存用户名、密码
-            
-            isFresh = false;        //把刷新状态改为未刷新，保证切换账号后，依然会自动获取免登陆URL，并重新载入
-            
+            isFresh = false;        //把刷新状态改为未刷新，保证登录后，自动获取免登陆URL
             GameLogin();            //调用登录函数
         }
 
@@ -877,14 +873,13 @@ namespace RedAlert
             str_qq = qq_textbox.Text;
             str_pwd = passwordBox.Password;
 
-            //生成配置文件对象
-            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None); //生成配置文件对象
             bool isExist = false;           //账号是否存在标识
             int j = 0;                      //QQ在配置中的位置
             string cfg_qq, cfg_mm;          //账号、密码定位变量（配置文件）
-            int pos;                        //临时位置，用于更改账号个数
+            int acc_pointer;                //账号指针
 
-            //遍历配置文件中的账号
+            //遍历配置文件，判断账号是否已经存在
             for (int i = 0; i < accNum; i++)
             {
                 j = i + 1;
@@ -892,46 +887,44 @@ namespace RedAlert
                 string cfgQQ = ConfigurationManager.AppSettings[the_qq];
                 if (cfgQQ == qq_textbox.Text)
                 {
-                    //把默认QQ改成当前序号
-                    cfa.AppSettings.Settings["Default_QQ"].Value = j.ToString();
-                    cfa.Save();
                     isExist = true;
-                    break;  //退出循环
+                    break;
                 }
             }
 
-            //确定账号、密码的写入位置
+            //账号已存在
             if (isExist)
             {
-                //定位到已存在的账号位置
+                //账号指针指向账号所在位置
                 cfg_qq = "QQ" + j.ToString();
                 cfg_mm = "MM" + j.ToString();
+                dfQQ = j;   //默认QQ
             }else
             {
-                //定位到新的账号位置
-                accNum++;
-                if(accNum > 10)                 //配置文件中只能存10个账号
+                accNum++;           //账号数量+1
+                dfQQ = accNum;      //默认QQ
+                if(accNum > 10)     //配置文件中只能存10个账号
                 {
                     accNum = 10;
-                    pos = lastAccNum += 1;                      //指向上一次溢出账号的下一个，将之覆盖
+                    acc_pointer = lastAccNum += 1;        //指向上一次溢出账号的下一个，将之覆盖
                 }else
                 {
-                    pos = accNum;
+                    acc_pointer = accNum;
                 }
-                cfg_qq = "QQ" + pos.ToString();
-                cfg_mm = "MM" + pos.ToString();
+                //账号指针指向新的地方
+                cfg_qq = "QQ" + acc_pointer.ToString();
+                cfg_mm = "MM" + acc_pointer.ToString();
+                cfa.AppSettings.Settings["Account_Num"].Value = accNum.ToString();  //更新个账号个数
             }
             
-            //写入配置文件
+            //账号、密码写入配置文件
             cfa.AppSettings.Settings[cfg_qq].Value = str_qq;
             cfa.AppSettings.Settings[cfg_mm].Value = str_pwd;
-            //更新账号个数、默认账号、账号溢出值
-            cfa.AppSettings.Settings["Account_Num"].Value = accNum.ToString();
-            cfa.AppSettings.Settings["Default_QQ"].Value = accNum.ToString();
+            //更新默认账号、账号覆盖指针
+            cfa.AppSettings.Settings["Default_QQ"].Value = dfQQ.ToString();
             cfa.AppSettings.Settings["Last_accNum"].Value = lastAccNum.ToString();
             cfa.Save();
         }
-
 
 
 
@@ -941,8 +934,8 @@ namespace RedAlert
         {
             //清空session
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_END_BROWSER_SESSION, IntPtr.Zero, 0);
-
-            if(threadLogin != null) { threadLogin.Abort(); }    //关闭之前的线程
+            //关闭之前的登录线程
+            if (threadLogin != null) { threadLogin.Abort(); }
             //启动登录线程
             threadLogin = new Thread(login_acttion);
             threadLogin.Start();
@@ -984,12 +977,11 @@ namespace RedAlert
 
 
 
-        //切换账号-按钮点击响应函数
+        //切换账号按钮--点击事件回调函数
         private void change_btn_Click(object sender, RoutedEventArgs e)
         {
-            //获取组合框选中索引值
-            int cbi = comboBox.SelectedIndex;
-            cbi++;      //转化为QQ在配置文件中的序号
+            int cbi = comboBox.SelectedIndex;       //获取组合框选中项的索引值
+            cbi++;                                  //转化为QQ在配置文件中的序号
             string qq_index = "QQ" + cbi.ToString();
             string mm_index = "MM" + cbi.ToString();
 
@@ -997,15 +989,14 @@ namespace RedAlert
             str_qq = ConfigurationManager.AppSettings[qq_index];
             str_pwd = ConfigurationManager.AppSettings[mm_index];
 
-            //更改配置文件中的默认QQ
+            //更新默认QQ
             Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             cfa.AppSettings.Settings["Default_QQ"].Value = cbi.ToString();
             cfa.Save();
             
-            isFresh = false;    //把刷新状态改为未刷新，保证切换账号后，依然会自动获取免登陆URL，并重新载入
+            isFresh = false;    //把刷新置为假，放行web控件的网页加载完成后，提取免登陆URL
             GameLogin();        //调用登录函数
         }
-
 
 
 
@@ -1057,9 +1048,10 @@ namespace RedAlert
 
 
 
-        //刷新按钮-点击事件
+        //刷新按钮-点击事件回调函数
         private void Refresh_btn_Click(object sender, RoutedEventArgs e)
         {
+            //载入免登陆URL
             Uri uri = new Uri(game_url);
             web1.Navigate(uri);
         }
