@@ -30,7 +30,7 @@ assistant for Red Alert, the QQ zone game.
 
 10、调用win32 API获取屏幕中某一点的颜色值
 
-11、使用web控件通过设置属性的、自动点击按钮的方式自动登录QQ空间并跳转
+11、web控件自动登录QQ空间
 
 12、子线程通过委托函数Dispatcher.BeginInvoke操作父线程的控件
 

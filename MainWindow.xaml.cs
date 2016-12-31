@@ -17,7 +17,7 @@ namespace RedAlert
     {
         //类成员变量
         string game_url;                                        //免登陆URL
-        bool isLogin = false;                                   //登录状态。不能直接在复选框xml绑定的函数上关闭定时器，因为复选框初始化时，定时器还没创建，所以先记录下来
+        bool isLogin = false;                                   //登录状态
         System.Windows.Threading.DispatcherTimer timer;         //定时器变量
         bool isFresh = false;                                   //刷新状态。如果是刷新状态，则不再向配置文件写入数据
         bool isAuto = false;                                    //自动脚本标记
@@ -28,6 +28,7 @@ namespace RedAlert
         string str_pwd = "";                                    //密码
         int accNum = 0;                                         //配置文件中保存的QQ账号个数
         int dfNum = 0;                                          //默认登录的QQ序号
+        int lastAccNum = 0;                                         //账号超过10个时，才使用
 
         private Forms.NotifyIcon notifyIcon;                    //最小化到系统托盘变量
 
@@ -72,12 +73,26 @@ namespace RedAlert
 
 
     /// <summary>
-    /// ========================================主窗体函数=================================================
+    /// =========主窗体类构造函数==================
     /// </summary>
     public MainWindow()
         {
             InitializeComponent();      //初始化组件
 
+            InitDisplay();          //初始化显示状态
+
+            InitRefresh();          //刷新初始化
+
+            InitAccount();          //初始化账号显示
+
+            CheckLoginStatus();     //检查登录状态
+        }
+
+
+
+        //显示初始化函数
+        private void InitDisplay()
+        {
             //--------------------------------------------程序驻留系统托盘----------------------------------------------------------
             this.notifyIcon = new Forms.NotifyIcon();
             this.notifyIcon.BalloonTipText = "红警大战已最小化到后台运行";
@@ -102,11 +117,17 @@ namespace RedAlert
             });
 
 
-            //指定窗口显示位置
+            //---------------------------指定窗口显示位置------------------------------------
             WindowStartupLocation = WindowStartupLocation.Manual;       //自定义窗口显示位置
             this.Top = 0;                       //距离顶部
             this.Left = 188;                    //距离左边
+        }
 
+
+
+        //刷新初始化函数
+        private void InitRefresh()
+        {
             string strFreshT = ConfigurationManager.AppSettings["FreshT"];          //从配置文件读取刷新周期FreshT
             int freshT = Convert.ToInt32(strFreshT);                                //转换成整形，赋值给定时器周期变量
 
@@ -115,20 +136,29 @@ namespace RedAlert
             timer.Tick += new EventHandler(timer_Refresh);                          //为定时器时间绑定调用函数
             timer.Interval = new TimeSpan(0, freshT, 0);                            //设置定时值：TimeSpan（时, 分， 秒）。freshT分钟刷新一次
 
+            //绑定文档加载完成的回调函数，到web控件中,onLoadDocCompleted
+            web1.LoadCompleted += new LoadCompletedEventHandler(onLoadDocCompleted);
+        }
+
+
+
+        //账号初始化函数
+        private void InitAccount()
+        {
             //初始化账号、密码输入框
             string strNum = ConfigurationManager.AppSettings["Default_QQ"];
             dfNum = Convert.ToInt16(strNum);
             string df_qq = "QQ" + dfNum.ToString();
             string df_mm = "MM" + dfNum.ToString();
-            //读取账号密码,填充文本框
             str_qq = qq_textbox.Text = ConfigurationManager.AppSettings[df_qq];
             str_pwd = passwordBox.Password = ConfigurationManager.AppSettings[df_mm];
 
             //获取账号个数
             string straccNum = ConfigurationManager.AppSettings["Account_Num"];
             accNum = Convert.ToInt16(straccNum);
-            //添加进组合框中
-            for(int i=0; i<accNum; i++)
+
+            //初始化账号组合框
+            for (int i = 0; i < accNum; i++)
             {
                 int j = i + 1;
                 string cfgqq = "QQ" + j.ToString();
@@ -137,7 +167,17 @@ namespace RedAlert
                 qq_item.Content = qq;
                 comboBox.Items.Add(qq_item);
             }
-            
+            comboBox.SelectedIndex = dfNum - 1;     //设置组合框默认显示项
+
+            lastAccNum = Convert.ToInt16(ConfigurationManager.AppSettings["Last_accNum"]);  //读取上一次账号溢出值
+            if (lastAccNum == 10) { lastAccNum = 0; }                                       //重置溢出值
+        }
+
+
+
+        //检查登录状态函数
+        private void CheckLoginStatus()
+        {
             //获取取当前日期
             long currentTime = System.DateTime.Now.Ticks;                           //获取当前时间的以100“毫微秒”为单位的值。1 毫微秒 = 10^-9 秒，100 毫微秒 = 10^-7 秒。   秒-毫秒-微秒-毫微秒：千进制。
             //MessageBox.Show(currentTime);                                         //表示自 0001 年 1 月 1 日午夜 12:00:00 以来已经过的时间的以 100 毫微秒为间隔的间隔数
@@ -180,12 +220,6 @@ namespace RedAlert
                 cfa.AppSettings.Settings["Date"].Value = currentTime.ToString();
                 cfa.Save();
             }
-
-            //绑定文档加载完成的回调函数，到web控件中,onLoadDocCompleted
-            web1.LoadCompleted += new LoadCompletedEventHandler(onLoadDocCompleted);
-
-            
-
         }
 
 
@@ -826,44 +860,79 @@ namespace RedAlert
         //登录按钮点击-响应函数
         private void login_btn_Click(object sender, RoutedEventArgs e)
         {
-            bool isSaveAcc = true;          //保存QQ标识
+            SavePassport();         //保存用户名、密码
+            
+            isFresh = false;        //把刷新状态改为未刷新，保证切换账号后，依然会自动获取免登陆URL，并重新载入
+            
+            GameLogin();            //调用登录函数
+        }
 
-            //判断QQ号码是否已经存在配置文件中
+
+
+
+        //保存账号、密码函数
+        private void SavePassport()
+        {
+            //更新登录用的QQ、密码
+            str_qq = qq_textbox.Text;
+            str_pwd = passwordBox.Password;
+
+            //生成配置文件对象
+            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            bool isExist = false;           //账号是否存在标识
+            int j = 0;                      //QQ在配置中的位置
+            string cfg_qq, cfg_mm;          //账号、密码定位变量（配置文件）
+            int pos;                        //临时位置，用于更改账号个数
+
+            //遍历配置文件中的账号
             for (int i = 0; i < accNum; i++)
             {
-                int j = i + 1;
+                j = i + 1;
                 string the_qq = "QQ" + j.ToString();
                 string cfgQQ = ConfigurationManager.AppSettings[the_qq];
                 if (cfgQQ == qq_textbox.Text)
                 {
                     //把默认QQ改成当前序号
-                    Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                     cfa.AppSettings.Settings["Default_QQ"].Value = j.ToString();
                     cfa.Save();
-                    isSaveAcc = false;
+                    isExist = true;
                     break;  //退出循环
                 }
             }
 
-            //是否保存QQ
-            if (isSaveAcc)
+            //确定账号、密码的写入位置
+            if (isExist)
             {
-                str_qq = qq_textbox.Text;
-                str_pwd = passwordBox.Password;
-                //把用户名和密码写入配置文件
+                //定位到已存在的账号位置
+                cfg_qq = "QQ" + j.ToString();
+                cfg_mm = "MM" + j.ToString();
+            }else
+            {
+                //定位到新的账号位置
                 accNum++;
-                string cfg_qq = "QQ" + accNum.ToString();
-                string cfg_mm = "MM" + accNum.ToString();
-                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                cfa.AppSettings.Settings[cfg_qq].Value = str_qq;
-                cfa.AppSettings.Settings[cfg_mm].Value = str_pwd;
-                cfa.AppSettings.Settings["Account_Num"].Value = accNum.ToString();
-                cfa.AppSettings.Settings["Default_QQ"].Value = accNum.ToString();
-                cfa.Save();
+                if(accNum > 10)                 //配置文件中只能存10个账号
+                {
+                    accNum = 10;
+                    pos = lastAccNum += 1;                      //指向上一次溢出账号的下一个，将之覆盖
+                }else
+                {
+                    pos = accNum;
+                }
+                cfg_qq = "QQ" + pos.ToString();
+                cfg_mm = "MM" + pos.ToString();
             }
-            //调用登录函数
-            GameLogin();
+            
+            //写入配置文件
+            cfa.AppSettings.Settings[cfg_qq].Value = str_qq;
+            cfa.AppSettings.Settings[cfg_mm].Value = str_pwd;
+            //更新账号个数、默认账号、账号溢出值
+            cfa.AppSettings.Settings["Account_Num"].Value = accNum.ToString();
+            cfa.AppSettings.Settings["Default_QQ"].Value = accNum.ToString();
+            cfa.AppSettings.Settings["Last_accNum"].Value = lastAccNum.ToString();
+            cfa.Save();
         }
+
+
 
 
 
@@ -873,6 +942,7 @@ namespace RedAlert
             //清空session
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_END_BROWSER_SESSION, IntPtr.Zero, 0);
 
+            if(threadLogin != null) { threadLogin.Abort(); }    //关闭之前的线程
             //启动登录线程
             threadLogin = new Thread(login_acttion);
             threadLogin.Start();
@@ -907,7 +977,7 @@ namespace RedAlert
             //输入密码并提交
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(InputPassword));
             Thread.Sleep(1000);
-            //输入密码并提交
+            //提交表单
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new delegate_login(Submit));
         }
 
@@ -922,10 +992,18 @@ namespace RedAlert
             cbi++;      //转化为QQ在配置文件中的序号
             string qq_index = "QQ" + cbi.ToString();
             string mm_index = "MM" + cbi.ToString();
+
+            //更新登录用的账号、密码
             str_qq = ConfigurationManager.AppSettings[qq_index];
             str_pwd = ConfigurationManager.AppSettings[mm_index];
-            //调用登录函数
-            GameLogin();
+
+            //更改配置文件中的默认QQ
+            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            cfa.AppSettings.Settings["Default_QQ"].Value = cbi.ToString();
+            cfa.Save();
+            
+            isFresh = false;    //把刷新状态改为未刷新，保证切换账号后，依然会自动获取免登陆URL，并重新载入
+            GameLogin();        //调用登录函数
         }
 
 
