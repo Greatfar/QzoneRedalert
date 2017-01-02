@@ -1,7 +1,7 @@
 # QzoneRedalertAssistant
 assistant for Red Alert, the QQ zone game.
 
-# QQ空间网页游戏-红警大战-辅佐程序
+# QQ空间红警大战-辅佐程序
 
 编程语言：C#
 
